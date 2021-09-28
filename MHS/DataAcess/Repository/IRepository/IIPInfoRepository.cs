@@ -6,5 +6,7 @@ namespace MHS.DataAccess.Repository.IRepository
     public interface IIPInfoRepository:IRepository<IPInfo>
     {
         public void Update(IPInfo iPInfo);
+
+        public string GetIPCode();
     }
 }

@@ -43,14 +43,13 @@ namespace MHS
             ));
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
-            //services.AddCors(options =>
-            //{
-            //    options.AddPolicy("AllowOrigin",
-            //       // builder => builder.WithOrigins("http://192.168.0.100:3000"));
-            //       builder => builder.WithOrigins("http://192.168.0.100:3000", "http://localhost:3000", "http://192.168.0.100:5000", "http://localhost:5000", "http://116.193.218.147:3000")
-            //   .AllowAnyMethod()
-            //   .AllowAnyHeader());
-            //});
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowOrigin",
+                   builder => builder.WithOrigins("http://192.168.0.100:3000", "http://localhost:3000")
+               .AllowAnyMethod()
+               .AllowAnyHeader());
+            });
 
             //adding identity
             services.AddIdentity<AppUser, IdentityRole>()
@@ -109,7 +108,7 @@ namespace MHS
 
             app.UseStaticFiles();
             app.UseSpaStaticFiles();
-
+            app.UseCors("AllowOrigin");
             app.UseAuthentication();
             app.UseRouting();
             app.UseAuthorization();

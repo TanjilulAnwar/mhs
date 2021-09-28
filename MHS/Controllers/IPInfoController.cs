@@ -23,12 +23,20 @@ namespace MHS.Controllers
         [Route("~/ipinfo")]
         public IActionResult GetIpList()
         {
-            List<IPInfo> iPInfos = new List<IPInfo>();
-            iPInfos = _unitOfWork.IPInfo.GetAll().ToList();
-            if (iPInfos.Count != 0)
-                return Json(new { sucess = true, ipinfo = iPInfos });
+            try
+            {
+                List<IPInfo> iPInfos = new List<IPInfo>();
+                iPInfos = _unitOfWork.IPInfo.GetAll().ToList();
+                if (iPInfos.Count != 0)
+                    return Json(new { success = true, message = iPInfos });
 
-            return Json(new { sucess = false, ipinfo = iPInfos });
+                return Json(new { success = false, message = iPInfos });
+            }
+            catch(Exception e)
+            {
+                return Json(new { success = false, message = e.Message });
+            }
+            
         }
 
 
@@ -41,7 +49,7 @@ namespace MHS.Controllers
               
                 if (iPInfo.id == 0)
                 {
-                    iPInfo.code = "IP00000002";
+                    iPInfo.code = _unitOfWork.IPInfo.GetIPCode();
                     iPInfo.created = DateTime.Now;
                     iPInfo.updated = DateTime.Now;
                     _unitOfWork.IPInfo.Add(iPInfo);
@@ -50,7 +58,7 @@ namespace MHS.Controllers
                 else
                 {
                     iPInfo.updated = DateTime.Now;
-                    _unitOfWork.IPInfo.Add(iPInfo);
+                    _unitOfWork.IPInfo.Update(iPInfo);
                 }
                 _unitOfWork.Save();
 

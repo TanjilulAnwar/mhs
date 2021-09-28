@@ -1,333 +1,117 @@
-import React,{Component} from 'react';
-import {variables} from '../Variables.js';
+import React, { Component } from 'react';
+import { variables } from '../Variables.js';
+import Table from './Table.jsx';
 const axios = require('axios');
 
 
-export class IP extends Component{
+export class IP extends Component {
+	constructor(props) {
+		super(props);
+		this.state = {
+			IPList: [],
+			is_update: false,
+			modal_open: false,
+			form_inputs: {is_active: true}
+		}
+	}
 
-    constructor(props){
-        super(props);
+	componentDidMount() {
+		axios.get(variables.API_URL + 'ipinfo')
+			.then(resp => resp.data.success && this.setState({ IPList: resp.data?.message }))
+	}
 
-        this.state = {
-       
-            id: 0,
-            name: "",
-            user: "",
-            password: "",
-            is_active: true,
-            modalTitle: "",
-            DepartmentId:"",
-            IPList: [],
-            success: false,
-        }
-    }
+	handleChange = (e)=>{
+		const name = e.target.name
+		this.setState({form_inputs: {...this.state.form_inputs, [e.target.name]: name==='is_active'?e.target.checked:e.target.value}})
+	}
 
-    FilterFn(){
-        var DepartmentIdFilter=this.state.DepartmentIdFilter;
-        var DepartmentNameFilter = this.state.DepartmentNameFilter;
+	setUpdateInfo(info) {
+		this.setState({is_update: true, modal_open: true, form_inputs: {...info}})
+	}
 
-        var filteredData=this.state.departmentsWithoutFilter.filter(
-            function(el){
-                return el.DepartmentId.toString().toLowerCase().includes(
-                    DepartmentIdFilter.toString().trim().toLowerCase()
-                )&&
-                el.DepartmentName.toString().toLowerCase().includes(
-                    DepartmentNameFilter.toString().trim().toLowerCase()
-                )
-            }
-        );
+	handleSubmit = ()=>{
+		axios.post(variables.API_URL + 'ipinfo/add', this.state.form_inputs)
+			.then((resp)=>{
+				if(resp.data.success) {
+					let new_list = [...this.state.IPList]
+					if(this.state.is_update){
+						const index = new_list.findIndex(val => val.id === resp.data.message?.id)
+						new_list[index] = resp.data?.message
+					} else {new_list = [...new_list, resp.data?.message]}
+					this.setState({IPList: new_list, modal_open: false})
+				}
+			})
+	}
 
-        this.setState({departments:filteredData});
+	render() {
+		return (
+			<div>
+				<button type="button"
+					className="btn btn-primary m-2 float-end"
+					data-bs-toggle="modal"
+					data-bs-target="#ipForm"
+					onClick={()=>this.setState({is_update: false, modal_open: true})}
+				>
+					Add IP
+				</button>
 
-    }
+				<Table ip_list={this.state.IPList} setUpdateInfo={this.setUpdateInfo.bind(this)}/>
 
-    sortResult(prop,asc){
-        var sortedData=this.state.departmentsWithoutFilter.sort(function(a,b){
-            if(asc){
-                return (a[prop]>b[prop])?1:((a[prop]<b[prop])?-1:0);
-            }
-            else{
-                return (b[prop]>a[prop])?1:((b[prop]<a[prop])?-1:0);
-            }
-        });
+				<div className="modal fade" id="ipForm" tabIndex="-1" aria-hidden="true">
+					<div className="modal-dialog modal-lg modal-dialog-centered">
+						<div className="modal-content">
+							<div className="modal-header">
+								<h5 className="modal-title">IP Details</h5>
+								<button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+							</div>
 
-        this.setState({departments:sortedData});
-    }
+							<div className="modal-body">
+								<div className="input-group mb-3">
+									<span className="input-group-text">IP</span>
+									<input type="text" className="form-control" name="name"
+										value={this.state.form_inputs.name} onChange={this.handleChange} />
+								</div>
 
-    changeDepartmentIdFilter = (e)=>{
-        this.state.DepartmentIdFilter=e.target.value;
-        this.FilterFn();
-    }
-    changeDepartmentNameFilter = (e)=>{
-        this.state.DepartmentNameFilter=e.target.value;
-        this.FilterFn();
-    }
+								<div className="input-group mb-3">
+									<span className="input-group-text">Description</span>
+									<input type="text" className="form-control" name="description"
+										value={this.state.form_inputs.description} onChange={this.handleChange} />
+								</div>
 
-    refreshList(){
-        fetch(variables.API_URL+'ipinfo')
-        .then(response=>response.json())
-            .then(data => {
-                console.log(data);
-                this.setState({ IPList: data.ipinfo, success: data.success });
-        });
-    }
+								<div className="input-group mb-3">
+									<span className="input-group-text">USER</span>
+									<input type="text" className="form-control" name="user"
+										value={this.state.form_inputs.user}
+										onChange={this.handleChange} />
+								</div>
+								<div className="input-group mb-3">
+									<span className="input-group-text">PASSWORD</span>
+									<input type="password" className="form-control" name="password"
+										value={this.state.form_inputs.password}
+										onChange={this.handleChange} />
+								</div>
 
-    componentDidMount(){
-        this.refreshList();
-    }
-    
-    changeDepartmentName = (e) => {
-        this.setState({ DepartmentName: e.target.value });
-    }
+								<div className="input-group mb-3">
+									<div class="form-check form-switch">
+										<label class="form-check-label" for="flexSwitchCheckChecked">Active</label>
+										<input class="form-check-input" type="checkbox" id="flexSwitchCheckChecked"
+											name="is_active"
+											checked={this.state.form_inputs.is_active}
+											onChange={this.handleChange}
+										/>
+									</div>
+								</div>
 
-  
-    handleChangeName = (e) => {
-      
-        this.setState({ name: e.target.value });
-    }
-    handleChangeUser = (e) => {
-
-        this.setState({ user: e.target.value });
-    }
-    handleChangePassword = (e) => {
-
-        this.setState({ password: e.target.value });
-    }
-    handleChangeIsActive = (e) => {
-
-        this.setState({ is_active: e.target.value });
-    }
-    handleChangeDescription = (e) => {
-
-        this.setState({ description: e.target.value });
-    }
-
-    addClick(){
-        this.setState({
-            modalTitle: "Add IP",
-            id: 0,
-            name: "",
-            description:"",
-            user: "",
-            password: "",
-            is_active: true
-
-
-        });
-    }
-    editClick(dep){
-        this.setState({
-            modalTitle:"Edit Department",
-            DepartmentId:dep.DepartmentId,
-            DepartmentName:dep.DepartmentName
-        });
-    }
-
-    createClick() {
-        let data = {
-            name: this.state.name,
-            user: this.state.user,
-            description: this.state.description,
-            password: this.state.password,
-            is_active: this.state.is_active
-        }
-
-        axios.post(variables.API_URL + 'ipinfo/add', data)
-            .then(function (response) {
-                alert(response.data.success);
-            })
-        this.refreshList();
-        this.addClick();
-    
-
-    }
-
-
-    updateClick(){
-        fetch(variables.API_URL+'department',{
-            method:'PUT',
-            headers:{
-                'Accept':'application/json',
-                'Content-Type':'application/json'
-            },
-            body:JSON.stringify({
-                DepartmentId:this.state.DepartmentId,
-                DepartmentName:this.state.DepartmentName
-            })
-        })
-        .then(res=>res.json())
-        .then((result)=>{
-            alert(result);
-            this.refreshList();
-        },(error)=>{
-            alert('Failed');
-        })
-    }
-
-    deleteClick(id){
-        if(window.confirm('Are you sure?')){
-        fetch(variables.API_URL+'department/'+id,{
-            method:'DELETE',
-            headers:{
-                'Accept':'application/json',
-                'Content-Type':'application/json'
-            }
-        })
-        .then(res=>res.json())
-        .then((result)=>{
-            alert(result);
-            this.refreshList();
-        },(error)=>{
-            alert('Failed');
-        })
-        }
-    }
-
-    render(){
-        const {
-            id,
-            name,
-            user,
-            description,
-            password,
-            is_active,
-            modalTitle,
-            DepartmentId,
-            IPList,
-            
-        }=this.state;
-
-        return(
-<div>
-
-    <button type="button"
-    className="btn btn-primary m-2 float-end"
-    data-bs-toggle="modal"
-    data-bs-target="#exampleModal"
-    onClick={()=>this.addClick()}>
-        Add IP
-    </button>
-    <table className="CTable">
-    <thead>
-    <tr>
-        <th>IP</th>
-        <th>USER NAME</th>
-        <th>PASSWORD</th>
-        <th>ACTIVE</th>
-        <th>CREATED</th>
-        <th>UPDATED</th>
-        <th>ACTION</th>
-    </tr>
-    </thead>
-    <tbody>
-            {IPList.map(ip=>
-            <tr key={ip.id}>
-                <td>{ip.name}</td>
-              {/*  <td>{ip.code}</td>*/}
-                    <td>{ip.user}</td>
-                    <td>{ip.password}</td>
-                    <td>{
-                        ip.is_active?'ACTIVE':'DEACTIVATED'
-                     }</td>
-                    <td>{ip.created.split('T')[0]}</td>
-                    <td>{ip.updated.split('T')[0]}</td>
-                <td>
-                <button type="button"
-                className="btn btn-light mr-1"
-                data-bs-toggle="modal"
-                data-bs-target="#exampleModal"
-                onClick={()=>this.editClick(ip)}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-pencil-square" viewBox="0 0 16 16">
-                    <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
-                    <path fillRule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
-                    </svg>
-                </button>
-
-                <button type="button"
-                className="btn btn-light mr-1"
-                onClick={()=>this.deleteClick(ip.id)}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-trash-fill" viewBox="0 0 16 16">
-                    <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5zm3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0z"/>
-                    </svg>
-                </button>
-
-                </td>
-            </tr>
-            )}
-    </tbody>
-    </table>
-
-
-
-
-
-
-
-<div className="modal fade" id="exampleModal" tabIndex="-1" aria-hidden="true">
-<div className="modal-dialog modal-lg modal-dialog-centered">
-<div className="modal-content">
-   <div className="modal-header">
-       <h5 className="modal-title">{modalTitle}</h5>
-       <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"
-       ></button>
-   </div>
-
-   <div className="modal-body">
-       <div className="input-group mb-3">
-        <span className="input-group-text">IP</span>
-        <input type="text" className="form-control"
-        value={name} onChange={this.handleChangeName} />
-     </div>
-
- <div className="input-group mb-3">
-        <span className="input-group-text">Description</span>
-        <input type="text" className="form-control"
-        value={description} onChange={this.handleChangeDescription} />
-     </div>
-
-
-<div className="input-group mb-3">
-        <span className="input-group-text">USER</span>
-        <input type="text" className="form-control"
-         value={user}
-      onChange={this.handleChangeUser} />
-     </div>
-         <div className="input-group mb-3">
-        <span className="input-group-text">PASSWORD</span>
-        <input type="text" className="form-control"
-     value={password}
-      onChange={this.handleChangePassword} />
-    </div>
-
-<div className="input-group mb-3">
-        <span className="input-group-text">ACTIVE</span>
-        <input type="text" className="form-control"
-      value={is_active}
-      onChange={this.handleChangeIsActive} />
-       </div>
-
-        {DepartmentId==0?
-        <button type="button"
-        className="btn btn-primary float-start"
-        onClick={()=>this.createClick()}
-        >Create</button>
-        :null}
-
-        {DepartmentId!=0?
-        <button type="button"
-        className="btn btn-primary float-start"
-        onClick={()=>this.updateClick()}
-        >Update</button>
-        :null}
-
-   </div>
-
-</div>
-</div> 
-</div>
-
-
-</div>
-        )
-    }
+								<button type="button"
+									className="btn btn-primary float-start"
+									onClick={() => this.handleSubmit()}
+								>Create
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		)
+	}
 }
